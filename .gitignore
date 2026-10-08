@@ -27,3 +27,7 @@ dist/
 /routershelf
 /deploy/padavan/supervisor.private.sh
 **/config.sh
+
+# Python development artifacts
+__pycache__/
+*.py[cod]

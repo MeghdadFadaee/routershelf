@@ -43,6 +43,8 @@ Read [environment configuration](docs/configuration.md) for available values, pr
 
 See [static-page behavior](docs/static-pages.md) for index precedence and supported assets.
 
+Use the [stress-test guide](docs/stress-testing.md) for bounded load phases, router telemetry and private reports. The runner uses Python 3.10+ with no third-party packages.
+
 ## Repository layout
 
 ```text

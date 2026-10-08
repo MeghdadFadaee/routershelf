@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Stress testing
+
+- Added a bounded read-only Python runner with phased concurrency, rate caps, optional router telemetry and stop thresholds.
+- Added keep-alive/fresh-TLS modes, static page/range/redirect preflight checks and private JSON/CSV/Markdown reports.
+- Verified the runner locally; no live-router stress load has been run.
+
 ### Static pages
 
 - Render directory `index.html` and direct HTML requests from the existing shared root.

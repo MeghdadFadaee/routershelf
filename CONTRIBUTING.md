@@ -2,7 +2,7 @@
 
 ## Development
 
-Use Go 1.26 or a newer toolchain verified against the target kernel. From the repository root, run `make test` and `make build-mipsle`. Keep changes focused and describe user-visible behavior and validation. A desktop cross-build proves compilation, not target-kernel compatibility or successful boot persistence.
+Use Go 1.26 or a newer toolchain verified against the target kernel, and Python 3.10+ for the stress-runner tests. From the repository root, run `make test` and `make build-mipsle`. Keep changes focused and describe user-visible behavior and validation. A desktop cross-build proves compilation, not target-kernel compatibility or successful boot persistence.
 
 Application changes belong in `cmd/routershelf`. Theme changes belong in `internal/theme/nais`; retain the upstream license and document local adaptations. Padavan-specific lifecycle rules belong in `deploy/padavan`. Keep the legacy status dashboard independent under `examples/status-dashboard`.
 
@@ -19,3 +19,5 @@ Record which checks actually ran. Do not claim a reboot or certificate renewal p
 Never attach private keys, certificate caches, full router exports, USB files, usernames/passwords, public-IP deployment values, or unredacted logs/screenshots. Use the example subnet, documentation IP range, and `files.example.com` in public issues. A sanitized minimal configuration is more useful than a full device dump.
 
 Before the first publication, review staged files and metadata, configure the actual Git remote, and replace publication placeholders where needed. There is no automatic deploy or publish action in this project.
+
+Stress-runner changes should be tested with `make test-stress-tool` against localhost and synthetic telemetry, not by loading the live deployment. Only run a live workload when requested, with the target and bounds clear. See [stress testing](docs/stress-testing.md).

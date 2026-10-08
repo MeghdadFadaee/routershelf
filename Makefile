@@ -1,9 +1,10 @@
 GO ?= go
+PYTHON ?= python3
 BINARY := dist/routershelf-linux-mipsle
 
-.PHONY: test build-mipsle check-shell check-config nat-plan
+.PHONY: test build-mipsle check-shell check-config nat-plan test-stress-tool
 
-test: check-shell check-config
+test: check-shell check-config test-stress-tool
 	$(GO) test ./...
 
 check-shell:
@@ -21,3 +22,6 @@ check-config:
 
 nat-plan:
 	sh scripts/nat-plan.sh
+
+test-stress-tool:
+	$(PYTHON) -B -m unittest discover -s scripts/tests -p 'test_*.py' -v

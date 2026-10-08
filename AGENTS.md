@@ -21,6 +21,7 @@ Read the relevant guide before changing a component:
 - `internal/theme/assets.go`: embeds assets under `internal/theme/nais/`.
 - `deploy/padavan/`: environment-driven supervisor and host firewall lifecycle.
 - `scripts/nat-plan.sh`: prints gateway configuration guidance; it does not modify the gateway.
+- `scripts/stress_test.py` and `scripts/tests/`: bounded load runner and localhost-only runner tests. Read `docs/stress-testing.md`; writing/editing the tool does not imply permission to load a live target.
 - `.env.example`: tracked configuration template; `.env` is private and ignored.
 - `examples/status-dashboard/`: independent historical BusyBox/Netcat example, with its guide in `docs/examples/`. Do not expose it using the public server's NAT rules.
 - `docs/`, `.github/`, `Makefile`, `project.json`: documentation, CI, local commands and metadata.
@@ -55,7 +56,8 @@ Preserve these unless the user explicitly requests a change:
 Run from the repository root using Go 1.26 or a newer toolchain verified against the target kernel:
 
 ```sh
-make test           # shell syntax, example config validation, Go tests
+make test           # shell syntax, config validation, Python runner tests, Go tests
+make test-stress-tool # Python localhost-only tests; no live-router requests
 make check-shell    # syntax only; does not execute deployment
 make check-config   # side-effect-free validation using .env.example
 make build-mipsle   # dist/routershelf-linux-mipsle, static Linux/MIPS LE soft-float
@@ -63,7 +65,7 @@ make build-mipsle   # dist/routershelf-linux-mipsle, static Linux/MIPS LE soft-f
 
 For a private configuration check, use `ROUTERSHELF_ENV_FILE=/absolute/path/to/.env sh deploy/padavan/supervisor.example.sh --check-config`. The env file is sourced shell code: do not load an untrusted one. `make nat-plan` reads private `.env` and prints deployment addresses; do not run it just to produce public diagnostics.
 
-There is no frontend build. Format Go with `gofmt`; use `.editorconfig` for other text. Keep deployment scripts compatible with the observed `/bin/sh` and BusyBox features.
+Python 3.10+ is required for runner tests on the development computer, not the router. There is no frontend build. Format Go with `gofmt`; use `.editorconfig` for other text. Keep deployment scripts compatible with the observed `/bin/sh` and BusyBox features.
 
 Use `testing` and `net/http/httptest` for meaningful behavior checks. For handler changes cover the affected filesystem boundaries, methods, headers, index precedence, inline MIME/disposition, fallback listing and byte ranges. For config changes cover env/flag precedence and validation. For shell-only changes run syntax and dry config checks; never start NTP or alter a live firewall merely to check formatting. Documentation-only edits normally need link/accuracy checks, not a cross-build or deployment.
 
