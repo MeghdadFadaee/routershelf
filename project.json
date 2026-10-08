@@ -1,0 +1,32 @@
+{
+  "name": "routershelf",
+  "displayName": "RouterShelf",
+  "description": "Read-only HTTPS directory sharing and static-page serving from USB storage on constrained Linux routers, with NAIS styling and environment-based deployment.",
+  "status": "experimental",
+  "license": "MIT",
+  "language": "Go",
+  "minimumGoVersion": "1.26.0",
+  "testedGoVersion": "1.26.5",
+  "entrypoint": "cmd/routershelf",
+  "documentation": "docs/getting-started.md",
+  "topics": [
+    "router",
+    "file-sharing",
+    "https",
+    "directory-listing",
+    "padavan",
+    "mikrotik",
+    "nais",
+    "static-site"
+  ],
+  "testedTarget": {
+    "hardware": "Neterbit NW-651D",
+    "architecture": "linux/mipsle",
+    "kernel": "3.4.113",
+    "firmware": "Padavan-derived",
+    "busybox": "1.24.2"
+  },
+  "repository": null,
+  "homepage": null,
+  "configuration": ".env.example"
+}

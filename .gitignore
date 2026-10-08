@@ -1,0 +1,29 @@
+# Private deployment settings, keys and operational data
+config.sh
+supervisor.private.sh
+.env
+.env.*
+!/.env.example
+*.key
+*.pem
+*.ovpn
+certificates/
+*.rsc
+*.backup
+*.pcap
+*.tar
+*.tar.gz
+*.zip
+# IDE, runtime, builds, local results
+.idea/
+.DS_Store
+work/
+outputs/
+*.log
+*.pid
+*.before-*
+dist/
+/public-directory*
+/routershelf
+/deploy/padavan/supervisor.private.sh
+**/config.sh
