@@ -14,7 +14,7 @@ LAN browser -> router TCP port 8080 -> Netcat -> shell request handler
                                                +-> HTTP headers + HTML response
 ```
 
-The router's management panel remains on its existing port. The new service does not change DHCP, routing, Wi-Fi settings, credentials, or the panel. Being in a directory opened by PhpStorm does not mean the router runs PHP.
+The router's management panel remains on its existing port. The new service does not change DHCP, routing, Wi-Fi settings, credentials, or the panel. The handler executes only the installed shell script; it does not run PHP.
 
 The browser requests `/` or `/status`. The handler reads a fixed request path, gathers metrics, sends a response, and exits. Netcat waits for the next client. With no browser open, no periodic probe runs.
 
@@ -278,7 +278,7 @@ Remove only this project's directory after reviewing its contents, then save sto
 - Review `git status` and `git diff --cached` before committing.
 - `.gitignore` does not remove files already tracked. If a secret was committed, remove it from history as appropriate and rotate the exposed credential before publishing.
 - State compatibility and testing limits honestly. A sample based on one router is not universal support.
-- Choose a license. This project includes MIT; review that choice before publication.
+- Retain the project MIT license and applicable third-party notices in distributions.
 
 For repository-wide contribution and publication guidance, return to the repository root and read [CONTRIBUTING.md](../../CONTRIBUTING.md). Keep this example under `examples/status-dashboard`; do not initialize a nested Git repository or publish private deployment configuration.
 

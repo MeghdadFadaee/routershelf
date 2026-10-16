@@ -37,7 +37,7 @@ On the development computer, with Go 1.26+:
 make test
 make build-smb-mipsle
 # For a local desktop executable:
-go build -o dist/routershelf-smb ./cmd/routershelf-smb
+make dist/routershelf-smb
 umask 077
 cp .smb.example.json smb.json
 chmod 600 smb.json

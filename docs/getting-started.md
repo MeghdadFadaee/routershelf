@@ -2,7 +2,6 @@
 
 For authenticated Finder access without web setup, follow the independent [SMB installation guide](smb.md). This page installs the public web service.
 
-
 ## Architecture and paths
 
 ```text
@@ -32,10 +31,8 @@ The certificates directory is private administrative material, despite its locat
 Build on a computer with Go, not on the router. The tested build used Go 1.26.5 and pinned dependencies in `go.mod`/`go.sum`. Confirm the current toolchain's compatibility with the target's old kernel before upgrading. The program uses `os.OpenRoot` to enforce the shared-directory boundary.
 
 ```sh
-mkdir -p dist
-go test ./...
-GOOS=linux GOARCH=mipsle GOMIPS=softfloat CGO_ENABLED=0 \
-  go build -trimpath -ldflags='-s -w' -o dist/routershelf-linux-mipsle ./cmd/routershelf
+make test
+make build-mipsle
 ```
 
 Use `mipsle` only for the matching target CPU. The binary has no PHP, nginx, or dynamically linked runtime requirement. Preserve dependency checksums. Rebuild and test for other devices rather than downloading an arbitrary executable.
@@ -149,7 +146,7 @@ Compare the download with its source. Use normal trusted certificate validation.
 
 The Go executable embeds the theme files under `internal/theme/nais`: `autoindex.css`, `autoindex.js`, and favicons. The listing references them under `/_nais/`. This reproduces the theme without nginx's `sub_filter` or its installer. Folder links remain navigable; regular files carry `data-file="true"` and download attributes. The script uses that marker for copied links and DPL playlists, including extensionless files.
 
-The bundled integration adjusts row width and the mobile heading, changes the footer to read-only storage, and adds copy feedback/fallback handling. The HTML template escapes names. Assets have explicit MIME types; HTML and recognized CSS/JavaScript/image/font assets are served inline with explicit MIME types; other files use `application/octet-stream` and attachment disposition. A directory with a readable regular `index.html` displays that page instead of its listing. PHP/CGI are not executed. The listing retains its strict CSP; static pages permit inline scripts/styles and external assets, with object embedding and framing blocked.
+The bundled integration adjusts row width and the mobile heading, adds copy feedback, and uses a read-only footer. HTTP listing/rendering lives in `internal/web`; licensed assets remain in `internal/theme/nais`. See [static pages](static-pages.md) for index precedence, inline MIME types, downloads and content policy. These rules apply to the same public root.
 
 To update the style, review upstream changes, copy the intended assets to this source tree, retain the NAIS license, preserve the integration changes, rebuild, and deploy using the rollback procedure. Do not publish the upstream landing page as the directory listing.
 

@@ -2,7 +2,6 @@
 
 This page covers the existing web installation. SMB has separate [status, update, rollback and removal procedures](smb.md#install-status-update-and-remove); stopping or updating one service does not operate the other.
 
-
 ## Routine care
 
 | Frequency / event | Check |
@@ -102,6 +101,7 @@ If public access is malfunctioning or unintended, disable the service's TCP 80/4
 | Renewal fails | Service downtime, USB/cache unavailable, inaccurate time, old DNS/NAT address, blocked challenge, or CA rate limit |
 | Folder/file missing | Wrong root/mount, dot-prefixed name, outside symlink, nonregular file, read permission, or 5,000-entry truncation |
 | FTP login works but upload fails | Account path/write permissions, read-only disk, or passive data ports; perform a real upload/download test |
+| Request hangs on a special file | The web handler opens before checking file type; a named pipe can block on filesystems that support it. Keep special files out of the public root; this existing edge case needs a separate fix |
 | Style missing | Failed `/_nais/` asset request, MIME/CSP issue, stale browser cache, or binary built without intended assets |
 | Copy button reports failure | Browser clipboard permission/support; test paste manually and try a supported secure browser |
 | Service returns after stopping child | Expected supervisor restart; stop the parent to stop the whole service |

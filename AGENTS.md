@@ -4,7 +4,7 @@ These instructions apply to the entire repository. Read any more specific `AGENT
 
 ## Project and entry points
 
-RouterShelf is a read-only Go HTTP/HTTPS server for USB storage on constrained Linux routers. It provides NAIS directory listings and static pages from the **same shared root**. The original deployment used Padavan-derived firmware and a MikroTik gateway; this is not universal firmware support.
+RouterShelf has independent Go services for public read-only HTTP/HTTPS and private authenticated SMB storage on constrained Linux routers. The web service provides NAIS directory listings and static pages from the **same shared root**. The original deployment used Padavan-derived firmware and a MikroTik gateway; this is not universal firmware support.
 
 Read the relevant guide before changing a component:
 
@@ -17,11 +17,14 @@ Read the relevant guide before changing a component:
 
 ## Repository layout
 
-- `cmd/routershelf/`: application, environment/flag parsing, handler and configuration tests.
-- `cmd/routershelf-smb/`, `internal/smbwire/`: independent private SMB executable and adapted Apache-2.0 protocol implementation. Read `docs/smb.md`, `docs/smb-implementation.md`, `docs/smb-validation.md` and `internal/smbwire/UPSTREAM.md` before changing it; preserve license/provenance.
+- `cmd/routershelf/`: web process startup, TLS, bounded listeners, environment/flag parsing and configuration tests.
+- `internal/web/`: public HTTP handlers, listings, static-file policy, redirect and behavior tests.
+- `cmd/routershelf-smb/`: independent private SMB executable; `main.go` owns CLI/runtime setup, `config.go` private JSON validation, `service.go` serving/storage monitoring, and `storage.go` mount/privilege operations.
+- `internal/smbwire/`: adapted Apache-2.0 protocol implementation. Read `docs/smb.md`, `docs/smb-implementation.md`, `docs/smb-validation.md` and `internal/smbwire/UPSTREAM.md` before changing it; preserve license/provenance.
 - `internal/theme/assets.go`: embeds assets under `internal/theme/nais/`.
 - `deploy/padavan/`: environment-driven supervisor and host firewall lifecycle.
 - `scripts/nat-plan.sh`: prints gateway configuration guidance; it does not modify the gateway.
+- `scripts/check_repository.py`: checks Git-visible source paths, local documentation links and service metadata without opening ignored private files.
 - `scripts/stress_test.py` and `scripts/tests/`: bounded load runner and localhost-only runner tests. Read `docs/stress-testing.md`; writing/editing the tool does not imply permission to load a live target.
 - `.env.example`: tracked configuration template; `.env` is private and ignored.
 - `examples/status-dashboard/`: independent historical BusyBox/Netcat example, with its guide in `docs/examples/`. Do not expose it using the public server's NAT rules.
@@ -57,7 +60,10 @@ Preserve these unless the user explicitly requests a change:
 Run from the repository root using Go 1.26 or a newer toolchain verified against the target kernel:
 
 ```sh
-make test           # shell syntax, config validation, Python runner tests, Go tests
+make test           # shell/config checks, Python tool tests, Go tests
+make check          # test plus format, docs/hygiene, vet and race checks
+make build          # both native executables under dist/
+make build-router   # both static MIPS little-endian soft-float executables
 make test-stress-tool # Python localhost-only tests; no live-router requests
 make check-shell    # syntax only; does not execute deployment
 make check-config   # side-effect-free validation using .env.example
@@ -84,6 +90,12 @@ Before publishing or refreshing a public archive, exclude private env, keys, cac
 
 ## SMB independence
 
-Keep SMB JSON/account/source policy and supervision independent of the web env, domain, certificates, public NAT and compatibility paths. SMB is experimental until actual native Finder and target checks are observed. Run `make build-smb-mipsle` in addition to the web build and SMB race tests for relevant changes. NT hashes are password-equivalent secrets; never publish actual configs. Only localhost native-client tests are implicitly part of local validation; target writes/execution require authorization.
+Keep SMB JSON/account/source policy and supervision independent of the web env, domain, certificates, public NAT and compatibility paths. SMB remains experimental; docs/smb-validation.md records observed native Finder/target smoke checks and unperformed failure/load/reboot checks. Run `make build-smb-mipsle` in addition to the web build and SMB race tests for relevant changes. NT hashes are password-equivalent secrets; never publish actual configs. Only localhost native-client tests are implicitly part of local validation; target writes/execution require authorization.
 
 Explicit SMB disk-root sharing requires `allow_storage_root`, deliberate public-overlap acknowledgment, and descriptor-safe protected-path exclusions. Preserve alias/ancestor-rename protection; a lexical path filter alone is insufficient. Record observed exFAT timestamp limitations without raising process privileges or acknowledging metadata changes that did not occur.
+
+## Structural maintenance
+
+Keep the commands independent. Public HTTP behavior and its tests belong in `internal/web`; startup and configuration stay command-local. Avoid shared privilege/config/supervisor abstractions where ordering and policy differ. Retain upstream SMB source and tests together for auditability; local policy helpers are in `access.go` with regression coverage in `policy_test.go`. Preserve renamed-source provenance in UPSTREAM.md.
+
+CI runs `make check` and `make build build-router`. Existing per-service build targets remain compatible. There is no automatic deployment or release workflow. Follow CONTRIBUTING.md for reviewed source exports; a hygiene check does not replace a secret/content review. Never delete ignored private files, outputs or user data as a repository cleanup.

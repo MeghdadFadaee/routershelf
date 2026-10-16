@@ -1,85 +1,63 @@
 # RouterShelf
 
-**USB file sharing for small Linux routers: public read-only web access and optional private Finder access over SMB.**
+USB file sharing for small Linux routers, with two independently runnable Go services:
 
-RouterShelf serves a chosen directory with a dark [NAIS](https://github.com/meghdadfadaee/nais) listing, file downloads, copied links, and DPL playlists. It uses a small Go executable, automatic Let's Encrypt certificates, and an optional Padavan-style supervisor. A MikroTik gateway provides public port forwarding and LAN hairpin access.
+| Service | Access | Start here |
+| --- | --- | --- |
+| `routershelf` | Public, unauthenticated, read-only HTTP/HTTPS | [Web setup](docs/getting-started.md) |
+| `routershelf-smb` | Private, authenticated SMB for Finder; read-only by default, optional writes | [SMB setup](docs/smb.md) |
 
-This repository includes the implementation and the practical guide for configuring, operating, backing up, and removing it. It also preserves an earlier LAN status-dashboard experiment as a standalone example.
+Run either service or both. SMB requires no web configuration, public domain, or certificates. Each service has its own configuration, account policy, supervisor, and update/recovery procedure.
 
-RouterShelf is one product with two independently runnable executables. The web service remains public, unauthenticated and read-only. The new experimental `routershelf-smb` service provides authenticated browsing and optional file management through Finder, without a web domain or certificates.
+The web service provides [NAIS](https://github.com/meghdadfadaee/nais) directory listings, downloads, copied links, DPL playlists, static pages, HEAD/byte ranges, and automatic HTTPS for one hostname. The experimental SMB service lets Finder browse and manage explicitly selected storage using macOS's built-in client.
 
-For private Finder access, start with the [SMB guide](docs/smb.md), [implementation decision](docs/smb-implementation.md), and [validation limits](docs/smb-validation.md).
+**The web root is public.** HTTPS protects transport but adds no authentication. Keep private SMB folders separate by default; deliberately overlapping storage can publish uploaded content immediately. Read [security boundaries](SECURITY.md) before installation.
 
-## Capabilities
+## Setup and operation
 
-- Directory navigation and file downloads, with HEAD and byte-range support.
-- Static pages from the same root: automatic `index.html` and inline HTML/CSS/JavaScript/assets.
-- Automatic HTTPS for one configured hostname; HTTP challenge handling and HTTPS redirects.
-- Embedded theme assets; no nginx, PHP runtime, database, or frontend build required.
-- GET/HEAD only, hidden-path filtering, escaped filenames, and filesystem root confinement.
-- Optional independent SMB executable with signed authentication, explicit folder selection and read-only/read-write modes.
-- Optional USB-aware restart supervision and dedicated IPv4/IPv6 firewall rules on the tested firmware.
+For web sharing, follow [network and storage preparation](docs/network-and-storage.md), then [installation](docs/getting-started.md). Configure a private copy of [`.env.example`](.env.example); [configuration](docs/configuration.md) covers environment values, flags and reload. The [operations guide](docs/operations.md) covers health checks, troubleshooting, updates, rollback and removal. [Static pages](docs/static-pages.md) explains index precedence and inline assets.
 
-The public file service has **no authentication**. HTTPS protects transport; every file placed in the shared directory is available to anyone who can reach the service. Read [security boundaries](SECURITY.md) before deploying.
+For Finder, follow the [SMB guide](docs/smb.md): build, choose storage, create credentials, configure a private copy of [`.smb.example.json`](.smb.example.json), and install its independent supervisor. The same guide covers permissions, status, troubleshooting, updates and removal. SMB is private by default and must not inherit public web forwarding.
 
-## Get started
+The Padavan deployment examples are optional and firmware-specific. A gateway such as MikroTik can forward public HTTP/HTTPS; a gateway is not needed for local SMB. No runtime, compiler, package installation, or shared library is required on the router.
 
-1. Read the [network and storage guide](docs/network-and-storage.md) to identify the gateway, service host, USB mount, and access accounts.
-2. Follow [installation and HTTPS setup](docs/getting-started.md), replacing every example value with private deployment settings.
-3. Use the [operations guide](docs/operations.md) for health checks, backups, updates, rollback, and removal.
+## Development
 
-Build and test from the repository root:
+Use Go 1.26 and Python 3.10+ on the development computer. From the repository root:
 
 ```sh
-make test
-make build-mipsle
-make build-smb-mipsle # optional independent Finder service
+make test          # Go tests, shell/config checks, Python tool tests
+make check         # Also formatting, docs/source hygiene, vet and race tests
+make build         # Native dist/routershelf and dist/routershelf-smb
+make build-router  # Both static Linux/MIPS LE soft-float executables
 ```
 
-The cross-build writes `dist/routershelf-linux-mipsle`. The deployment guide explains its installed filename and router paths. Configure deployment without editing source or supervisor code:
+The existing `make build-mipsle` and `make build-smb-mipsle` targets remain available independently. Builds go under ignored `dist/`; private configurations and local reports stay ignored. Nothing here deploys automatically. See [contributing](CONTRIBUTING.md) for validation, native-client checks and distribution guidance.
 
-```sh
-cp .env.example .env
-# Edit .env privately, then validate it and print the gateway plan.
-ROUTERSHELF_ENV_FILE="$PWD/.env" sh deploy/padavan/supervisor.example.sh --check-config
-make nat-plan
-```
-
-Read [environment configuration](docs/configuration.md) for available values, precedence, installation, and reloading. `.env` is ignored by Git; `.env.example` is tracked. Gateway changes are still applied manually from the printed plan.
-
-See [static-page behavior](docs/static-pages.md) for index precedence and supported assets.
-
-Use the [stress-test guide](docs/stress-testing.md) for bounded load phases, router telemetry and private reports. The runner uses Python 3.10+ with no third-party packages.
-
-## Repository layout
+## Code and documentation
 
 ```text
-cmd/routershelf/             HTTP/HTTPS application and behavior tests
-cmd/routershelf-smb/         Independent private SMB executable and config tests
-internal/smbwire/            Adapted Apache-2.0 SMB protocol source and tests
-internal/theme/nais/         Licensed NAIS assets embedded in the executable
-internal/theme/assets.go     Asset embedding boundary
-deploy/padavan/              Environment-driven firmware supervisor
-examples/status-dashboard/  Separate legacy BusyBox/Netcat dashboard
-docs/                       Setup, operations, architecture, and deployment history
-.github/                    CI and issue/pull-request templates
-scripts/nat-plan.sh          Gateway plan derived from private environment
-.env.example                Public web configuration template
-.smb.example.json           Public SMB template; real credentials stay private
-Makefile                    Local checks and MIPS little-endian build
-project.json                Project identity and compatibility metadata
+cmd/routershelf/       Web configuration, startup, TLS and connection limits
+cmd/routershelf-smb/   SMB configuration, startup and storage supervision
+internal/web/         Public HTTP handlers, listings, static files and tests
+internal/theme/       Embedded NAIS assets and their license
+internal/smbwire/     Adapted SMB protocol implementation, license and tests
+deploy/padavan/       Independent firmware supervisor examples
+scripts/              Local checks, gateway planning and test tools
+docs/                 User guides, architecture and validation records
+examples/             Separate historical LAN status-dashboard tutorial
 ```
 
-See [architecture](docs/architecture.md) for the separation between application, theme, firmware, and gateway responsibilities. The [deployment history](docs/deployment-history.md) records work completed on the original hardware and what remains unverified. The [status dashboard tutorial](docs/examples/status-dashboard.md) describes the earlier LAN-only example; it is not the public HTTPS server.
+Read [architecture](docs/architecture.md) for responsibilities and dependency boundaries. [Web deployment history](docs/deployment-history.md) and [SMB validation](docs/smb-validation.md) distinguish observed results from remaining hardware checks. The [SMB implementation decision](docs/smb-implementation.md) records backend tradeoffs and maintenance obligations. [Stress testing](docs/stress-testing.md) describes the opt-in bounded load tool; local tests do not authorize live load.
 
-## Compatibility and validation
+## Compatibility and limitations
 
-The original deployment used a Neterbit NW-651D with Padavan-derived firmware, Linux 3.4.113, BusyBox 1.24.2, about 128 MiB RAM, and a MIPS little-endian CPU. Its gateway was a MikroTik LHG5 running RouterOS 6.49.22. The tested compiler was Go 1.26.5. Other router firmware, CPU architectures, and newer toolchains require target testing.
+Observed target: Padavan-derived firmware, MediaTek MT7621 MIPS little-endian, Linux 3.4.113, BusyBox 1.24.2, approximately 128 MiB RAM, no swap, and exFAT USB storage. The recorded toolchain is Go 1.26.5. Other firmware, architectures and toolchains require target testing.
 
-On the original device, HTTPS issuance, trusted downloads, HTTP redirects, read-only access checks, theme rendering, and a playlist download were checked. Full reboot, future certificate renewal, sustained load, and authenticated FTP transfer were not verified. The environment-driven supervisor is validated separately; hardware validation is recorded in the deployment history.
+Web HTTPS and read-only operations have been observed on that target. SMB authentication, protected disk-root access, small checksum-verified transfers, Finder copy/Quick Look and independent restart have also been observed. exFAT refused arbitrary timestamp restoration by the non-root SMB account. SMB remains experimental; full reboot, USB-loss recovery, large native transfers, complete Mac metadata compatibility and sustained combined load remain unverified. Compilation and desktop tests alone do not prove device compatibility.
 
-## Contributing and publishing
+## License and distribution
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Keep deployment configuration, certificate caches, keys, router exports, USB data, logs, and generated binaries out of Git. All tracked deployment examples use placeholder values. This local repository has no configured remote and has not been published.
+RouterShelf project code is [MIT licensed](LICENSE). Embedded SMB code retains [Apache-2.0](internal/smbwire/LICENSE); NAIS retains its [MIT license](internal/theme/nais/LICENSE). Preserve [third-party notices](THIRD_PARTY_NOTICES.md) and module license obligations when distributing.
 
-Project code is [MIT licensed](LICENSE); the embedded SMB implementation retains its [Apache-2.0 license](internal/smbwire/LICENSE). NAIS retains its [upstream MIT license](internal/theme/nais/LICENSE). Dependency and theme attribution is collected in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Keep configuration, NT hashes, passwords, certificates, router exports, USB data and diagnostics out of source archives. Read [contribution and distribution guidance](CONTRIBUTING.md) before sharing source or binaries. Project identity and compatibility metadata are in [project.json](project.json); no remote or release is assumed.

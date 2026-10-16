@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"net/http/httptest"
@@ -17,7 +17,7 @@ func TestFileScopeAndMethods(t *testing.T) {
 	os.Symlink(outside, filepath.Join(root, "escape.txt"))
 	os.Mkdir(filepath.Join(root, "sub"), 0700)
 	os.WriteFile(filepath.Join(root, "<&.txt"), []byte("safe"), 0600)
-	h := handler(root)
+	h := Handler(root)
 	for _, tc := range []struct {
 		method, url string
 		code        int
@@ -54,7 +54,7 @@ func TestFileScopeAndMethods(t *testing.T) {
 }
 
 func TestHTTPSRedirect(t *testing.T) {
-	h := redirectHandler("files.example.com")
+	h := RedirectHandler("files.example.com")
 	for _, tc := range []struct {
 		target, method string
 		status         int
@@ -68,6 +68,38 @@ func TestHTTPSRedirect(t *testing.T) {
 		h.ServeHTTP(w, httptest.NewRequest(tc.method, tc.target, nil))
 		if w.Code != tc.status || w.Header().Get("Location") != tc.location {
 			t.Errorf("%s: status=%d location=%q", tc.target, w.Code, w.Header().Get("Location"))
+		}
+	}
+}
+
+// Exercise the embedding boundary after moving HTTP behavior out of the command.
+func TestEmbeddedAssetsAndReservedNamespace(t *testing.T) {
+	h := Handler(filepath.Join(t.TempDir(), "unavailable-storage"))
+	for _, tc := range []struct{ name, contentType string }{
+		{"autoindex.css", "text/css; charset=utf-8"},
+		{"autoindex.js", "text/javascript; charset=utf-8"},
+		{"favicon.ico", "image/x-icon"},
+		{"favicon.png", "image/png"},
+	} {
+		for _, method := range []string{"GET", "HEAD"} {
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, httptest.NewRequest(method, "/_nais/"+tc.name, nil))
+			if w.Code != 200 || w.Header().Get("Content-Type") != tc.contentType {
+				t.Fatalf("%s %s: status=%d type=%q", method, tc.name, w.Code, w.Header().Get("Content-Type"))
+			}
+			if (method == "HEAD") != (w.Body.Len() == 0) {
+				t.Fatalf("%s %s: unexpected body length %d", method, tc.name, w.Body.Len())
+			}
+			if w.Header().Get("X-Content-Type-Options") != "nosniff" {
+				t.Fatal("asset MIME protection missing")
+			}
+		}
+	}
+	for _, target := range []string{"/_nais/LICENSE", "/_nais/../secret", "/_nais/nested/autoindex.js"} {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest("GET", target, nil))
+		if w.Code != 404 {
+			t.Fatalf("reserved namespace exposed %s: %d", target, w.Code)
 		}
 	}
 }

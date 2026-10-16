@@ -8,7 +8,7 @@
   "minimumGoVersion": "1.26.0",
   "testedGoVersion": "1.26.5",
   "entrypoint": "cmd/routershelf",
-  "documentation": "docs/getting-started.md",
+  "documentation": "README.md",
   "topics": [
     "router",
     "file-sharing",
@@ -37,13 +37,14 @@
       "entrypoint": "cmd/routershelf",
       "configuration": ".env.example",
       "access": "public unauthenticated read-only",
-      "targetStatus": "observed; see docs/deployment-history.md"
+      "targetStatus": "observed; see docs/deployment-history.md",
+      "documentation": "docs/getting-started.md"
     },
     "smb": {
       "entrypoint": "cmd/routershelf-smb",
       "configuration": ".smb.example.json",
       "access": "private authenticated; read-only by default",
-      "targetStatus": "experimental; cross-build only pending target execution approval",
+      "targetStatus": "experimental; target smoke checks observed; see docs/smb-validation.md",
       "documentation": "docs/smb.md"
     }
   }

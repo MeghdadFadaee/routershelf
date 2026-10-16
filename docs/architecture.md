@@ -1,35 +1,38 @@
 # Architecture
 
-RouterShelf has independent web and SMB service executables within these operational layers:
+RouterShelf is one Go module with two independent commands. Each owns its configuration and process lifecycle. Small command-local files keep startup concerns together; only the HTTP response layer and the substantial SMB protocol implementation need separate internal packages.
 
-| Layer | Responsibility | Repository location |
+| Component | Responsibility | Location |
 | --- | --- | --- |
-| Go application | Safe directory reads, HTTP responses, TLS and ACME, connection limits, privilege drop | `cmd/routershelf` |
-| Private SMB application | Independent account/config, selected root, signed SMB, write policy and privilege drop | `cmd/routershelf-smb`, `internal/smbwire` |
-| Embedded theme | NAIS styling, favicon, copied links, playlist generation | `internal/theme` |
-| Router lifecycle | USB checks, process restart, time startup, host firewall hooks, flash persistence | `deploy/padavan` |
-| Network gateway | Public DNS destination, destination NAT, LAN hairpin reply routing | Configuration documented in `docs/getting-started.md` |
+| Web command | Environment/flag validation, privilege drop, listeners, connection bounds, TLS and ACME | `cmd/routershelf` |
+| Public HTTP | Filesystem confinement, methods, listings, static pages, download headers and HTTPS redirects | `internal/web` |
+| Embedded theme | NAIS CSS/JavaScript, favicon, copied links and playlists | `internal/theme` |
+| SMB command | Private JSON validation, credentials CLI, listener/privilege setup, mount/root monitoring | `cmd/routershelf-smb` |
+| SMB protocol | Authentication, signing, permissions, bounded operations, locks and protected storage view | `internal/smbwire` |
+| Router lifecycle | Independently runnable firmware supervisors; web firewall/time hooks | `deploy/padavan` |
+| Gateway planning | Print administrator-reviewed public web NAT guidance; never apply it | `scripts/nat-plan.sh` |
+
+## Dependencies and access policy
 
 ```text
-Browser -> gateway TCP 80/443 -> storage host TCP 10080/10443
-                                       |
-                                  RouterShelf
-                                  /         \
-                       shared directory    private ACME cache
-                                  |
-                             USB filesystem
+routershelf command -> internal/web -> internal/theme
+                  -> x/crypto/acme/autocert
+
+routershelf-smb command -> internal/smbwire -> x/crypto, x/sys
 ```
 
-The gateway plan is generated from `.env` by `scripts/nat-plan.sh`, rather than auto-applied: changing a gateway requires matching its actual interfaces, existing NAT/filter rules, and public address. The Go application does not change routing, configure DHCP, or provision FTP accounts.
+Neither executable imports the other service. There is no shared configuration or lifecycle abstraction: web environment/shell policy and SMB protected JSON have different compatibility and trust contracts. Similar-looking privilege handling also has different ordering: web drops before binding unprivileged ports; SMB binds its private listener before dropping so it can use TCP 445.
 
-The `deploy/padavan` script loads a private environment file for one firmware family. Its installed names remain `public-share-service.sh`, `public-directory`, and `/tmp/public-share-*` for compatibility with the existing deployed system and instructions. Renaming the repository is not a live-router migration.
+The HTTP handler opens an `os.Root` per request and preserves current removable-storage behavior. SMB pins its selected root for a session-serving lifetime and exits when mount/root identity changes. Its protected disk-root view adds descriptor-based exclusions; see the [adaptation inventory](../internal/smbwire/UPSTREAM.md). Both may use the same physical disk, so resource pressure and explicitly overlapping data remain shared operational risks.
 
-The legacy dashboard is a separate Netcat/shell example, with its own configuration and security assumptions. Its code remains in `examples/status-dashboard` and its guide in `docs/examples/status-dashboard.md`. It was removed from the original router and must never inherit the public server's port-forwarding policy.
+## Deployment boundaries
 
-The Go module path is currently `routershelf`, a local standalone module identity. If a real repository remote is established later, change the module path and the `routershelf/internal/theme` import together if a hosted module path is desired. No remote namespace is assumed.
+Public web traffic can follow `Browser -> gateway TCP 80/443 -> storage-host HTTP/HTTPS listeners`. Certificate/account cache, binary and configuration belong outside the public root. The [configuration reference](configuration.md) describes the environment contract.
 
-Read [setup](getting-started.md), [operations](operations.md), and [security](../SECURITY.md) for configuration and maintenance boundaries.
+Private access follows `Finder -> specific private IPv4 SMB listener -> selected USB directory`. It requires no domain, certificates, NTP startup or gateway forwarding. The SMB supervisor uses its own executable/config paths and `/tmp/routershelf-smb/` lock. It does not source the web environment, change firewall rules or signal the web service. Administrators restrict the listener with their own service-scoped firewall policy; see [SMB setup](smb.md).
 
-## Independent private SMB path
+The web supervisor's installed compatibility names remain `public-share-service.sh`, `public-directory` and `/tmp/public-share-*`. Repository organization does not migrate deployed installations. Padavan hooks, flash persistence and BusyBox details remain platform-specific and should not become application responsibilities. The Go commands do not provision DHCP, alter routing/NAT or create FTP accounts.
 
-`Finder -> specific private IPv4 SMB listener -> os.Root selected private USB folder`. This path needs no web server, certificates, NTP startup or gateway NAT. The SMB supervisor uses its own JSON path, executable, process tree and `/tmp/routershelf-smb/` lock. It never sources the web environment, changes firewall rules or signals the web service. The web binary does not import SMB code. Both may access USB storage, so resource pressure and deliberately overlapping data remain shared operational risks. See [SMB setup and lifecycle](smb.md) and [implementation decision](smb-implementation.md).
+The module path remains `routershelf`; no hosted namespace is assumed. The [legacy dashboard](../examples/status-dashboard/README.md) is a standalone historical tutorial with separate security assumptions and no Go dependency. It must not inherit public forwarding.
+
+Read [web setup](getting-started.md), [web operation](operations.md), [SMB setup and operation](smb.md), and [security](../SECURITY.md) for user procedures. Validation history records observations; it is not the installation source of truth.

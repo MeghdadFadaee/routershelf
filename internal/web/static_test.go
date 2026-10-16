@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"net/http/httptest"
@@ -17,7 +17,7 @@ func TestStaticPagesAndAssets(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	h := handler(root)
+	h := Handler(root)
 	for _, tc := range []struct {
 		url, ctype, body string
 		code             int
@@ -62,7 +62,7 @@ func TestEscapingIndexSymlinkAndRootIndex(t *testing.T) {
 	outside := filepath.Join(t.TempDir(), "secret.html")
 	os.WriteFile(outside, []byte("private page"), 0600)
 	os.Symlink(outside, filepath.Join(root, "index.html"))
-	h := handler(root)
+	h := Handler(root)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest("GET", "/", nil))
 	if w.Code != 200 || strings.Contains(w.Body.String(), "private page") {

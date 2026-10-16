@@ -12,6 +12,5 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.x'
-      - run: make test
-      - run: make build-mipsle build-smb-mipsle
-      - run: go test -race ./cmd/routershelf-smb ./internal/smbwire
+      - run: make check
+      - run: make build build-router
