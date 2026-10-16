@@ -97,3 +97,11 @@ compatibility and sustained combined resource/load checks remain unperformed.
 Private device addresses, disk identifiers, account hashes, passwords, hook
 backups and detailed operational instructions remain only in ignored local
 outputs and protected router configuration, not in public source examples.
+
+## Refactor deployment regression (2026-10-16)
+
+The refactored static MIPS executable was subsequently deployed with explicit authorization and a retained rollback binary. Installed/upload SHA-256 matched. Native macOS checks again passed for wrong-password refusal, correct login, protected-file exclusions, mkdir, 256 KiB upload, cross-directory move/rename, checksum-verified download, deletion and cleanup. The web process remained unchanged during the SMB update; SMB remained running during the preceding web update. Private configuration, certificates, hooks and firewall policy were preserved.
+
+An already connected Mac initially reused saved authentication during a negative-password mount probe. A temporary localhost TCP relay to the actual LAN service isolated the server identity from that saved connection; the fresh negative login was refused. This avoided disconnecting the user’s existing Finder mount and did not expose real credentials in arguments or logs. It is a native-client protocol/filesystem check, not a new Finder GUI test.
+
+The non-root exFAT timestamp restriction remains. No large native transfer, interruption, USB removal, reboot or sustained combined load check was added during this update.

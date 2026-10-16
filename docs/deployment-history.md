@@ -88,3 +88,11 @@ Router access for this change was read-only inspection of kernel, RAM, BusyBox, 
 ## 11. Authorized SMB installation and protected disk-root view (2026-10-16)
 
 At the user’s request, SMB was installed independently with authenticated read/write access to a protected disk-root view. Service/certificate directories and firmware account metadata remain inaccessible through SMB. Dedicated LAN-only firewall rules, USB-aware supervision and separate startup/firewall hooks were configured; the web process and HTTPS behavior stayed intact. Native Mac file-operation checks, a bounded checksum transfer, actual Finder copy/Quick Look and independent SMB restart passed. Timestamp restoration is limited by exFAT ownership. See the [detailed validation record](smb-validation.md) for observations and outstanding reboot, USB failure and load checks.
+
+## 12. Refactor binary update (2026-10-16)
+
+After explicit deployment authorization, both refactored executables were rebuilt and updated on the original Linux 3.4.113 MIPS target. Local `make check build-router` passed. New filenames were uploaded and SHA-256 verified before replacement; separate known-good binaries were retained privately for rollback. The web child was restarted through its existing supervisor, then the SMB supervisor was stopped, allowed to clean up, and restarted independently. The other service’s process remained unchanged during each update.
+
+Observed web checks passed: trusted HTTPS through the existing gateway and directly to the service, static index/JavaScript, embedded assets, HEAD, byte ranges, directory slash and HTTP redirects, a 256 KiB checksum-verified download, and hidden/traversal/reserved-namespace/write-method refusals. Native Mac SMB authentication, protected-file boundaries, mkdir/upload/move/rename/download/checksum/delete passed using a separate 256 KiB scratch transfer. All test files were removed.
+
+Configuration, credentials, certificates, hooks and supervisor files matched their pre-update fingerprints; firewall snapshots were identical. No flash save, routing changes, reboot, USB-loss test or sustained load was performed. The existing exFAT timestamp-restoration limitation remains. These are bounded functional checks, not proof of resource ceilings, automatic transfer recovery or reboot reliability.
