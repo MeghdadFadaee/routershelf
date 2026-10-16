@@ -26,3 +26,11 @@ The original firmware/kernel are old. This project does not make an unsupported 
 Use example-only addresses and hostnames. Exclude private config, keys/certificates, cache directories, firmware exports, logs, disk data, screenshots, build outputs, and IDE state. Review staged files. Never paste full router dumps into an issue; provide sanitized diagnostic excerpts.
 
 See [operations](docs/operations.md) for backup, rollback, and removal instructions, and [deployment history](docs/deployment-history.md) for validation limits.
+
+## Optional private SMB service
+
+`routershelf-smb` is an experimental separately configured authenticated service; it does not add authentication or writes to HTTP. It binds a specific private/loopback IPv4 address, requires explicit trusted-source CIDRs, NTLMv2 and signed packets, and drops OS privileges before serving a selected `os.Root` directory. Signing does not encrypt data. Do not expose SMB through WAN forwards/public tunnels or the web firewall chain.
+
+Private JSON contains a password-equivalent NT hash: require protected file modes/ownership on permission-enforcing storage outside all shares. exFAT mount permissions do not isolate service secrets from broadly authorized accounts. Read-only sharing is enforced by the service; per-file ACL changes are unsupported. SMB includes hidden files and allows writes only when explicitly configured. Keep private/public storage separate, list customized public roots, and opt in explicitly to overlap; an upload into a public root can immediately publish its content.
+
+Server-local locks do not coordinate FTP/SFTP/local writers or multiple independent SMB processes. Interrupted writes can leave partial files; exFAT/power loss has no transactional recovery guarantee. Back up data, preserve sources and verify transfers before replacement. Bounds and the Go memory target cannot prevent all resource exhaustion. This backend needs independent security review and target validation before stronger support claims. See [SMB security and limitations](docs/smb.md#privacy-and-filesystem-behavior).

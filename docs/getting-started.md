@@ -1,5 +1,8 @@
 # Deploy the public HTTPS directory service
 
+For authenticated Finder access without web setup, follow the independent [SMB installation guide](smb.md). This page installs the public web service.
+
+
 ## Architecture and paths
 
 ```text

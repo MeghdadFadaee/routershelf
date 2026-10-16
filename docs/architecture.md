@@ -1,10 +1,11 @@
 # Architecture
 
-RouterShelf has four operational layers:
+RouterShelf has independent web and SMB service executables within these operational layers:
 
 | Layer | Responsibility | Repository location |
 | --- | --- | --- |
 | Go application | Safe directory reads, HTTP responses, TLS and ACME, connection limits, privilege drop | `cmd/routershelf` |
+| Private SMB application | Independent account/config, selected root, signed SMB, write policy and privilege drop | `cmd/routershelf-smb`, `internal/smbwire` |
 | Embedded theme | NAIS styling, favicon, copied links, playlist generation | `internal/theme` |
 | Router lifecycle | USB checks, process restart, time startup, host firewall hooks, flash persistence | `deploy/padavan` |
 | Network gateway | Public DNS destination, destination NAT, LAN hairpin reply routing | Configuration documented in `docs/getting-started.md` |
@@ -28,3 +29,7 @@ The legacy dashboard is a separate Netcat/shell example, with its own configurat
 The Go module path is currently `routershelf`, a local standalone module identity. If a real repository remote is established later, change the module path and the `routershelf/internal/theme` import together if a hosted module path is desired. No remote namespace is assumed.
 
 Read [setup](getting-started.md), [operations](operations.md), and [security](../SECURITY.md) for configuration and maintenance boundaries.
+
+## Independent private SMB path
+
+`Finder -> specific private IPv4 SMB listener -> os.Root selected private USB folder`. This path needs no web server, certificates, NTP startup or gateway NAT. The SMB supervisor uses its own JSON path, executable, process tree and `/tmp/routershelf-smb/` lock. It never sources the web environment, changes firewall rules or signals the web service. The web binary does not import SMB code. Both may access USB storage, so resource pressure and deliberately overlapping data remain shared operational risks. See [SMB setup and lifecycle](smb.md) and [implementation decision](smb-implementation.md).

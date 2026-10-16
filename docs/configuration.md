@@ -1,5 +1,7 @@
 # Environment configuration
 
+This guide describes the web service. The independent SMB service uses private JSON and `RS_SMB_CONFIG`; its supervisor also accepts `RS_SMB_BINARY`. Neither reads the web settings. See the [SMB configuration reference](smb.md#configuration-reference).
+
 Network-specific settings live in a private `.env` file. The public `.env.example` contains only illustrative values. Changing a domain, subnet, USB mount, or port does not require editing Go or shell source and does not require rebuilding the application.
 
 ## Loading and precedence

@@ -31,3 +31,12 @@ dist/
 # Python development artifacts
 __pycache__/
 *.py[cod]
+
+# SMB private credentials (NT hashes are password-equivalent)
+smb.json
+smb.*.json
+.smb.json
+/routershelf-smb
+routershelf-smb*.json
+.smb.*.json
+!/.smb.example.json

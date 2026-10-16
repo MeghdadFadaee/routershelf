@@ -1,10 +1,14 @@
 # RouterShelf
 
-**Read-only HTTPS file sharing from USB storage on a small Linux router.**
+**USB file sharing for small Linux routers: public read-only web access and optional private Finder access over SMB.**
 
 RouterShelf serves a chosen directory with a dark [NAIS](https://github.com/meghdadfadaee/nais) listing, file downloads, copied links, and DPL playlists. It uses a small Go executable, automatic Let's Encrypt certificates, and an optional Padavan-style supervisor. A MikroTik gateway provides public port forwarding and LAN hairpin access.
 
 This repository includes the implementation and the practical guide for configuring, operating, backing up, and removing it. It also preserves an earlier LAN status-dashboard experiment as a standalone example.
+
+RouterShelf is one product with two independently runnable executables. The web service remains public, unauthenticated and read-only. The new experimental `routershelf-smb` service provides authenticated browsing and optional file management through Finder, without a web domain or certificates.
+
+For private Finder access, start with the [SMB guide](docs/smb.md), [implementation decision](docs/smb-implementation.md), and [validation limits](docs/smb-validation.md).
 
 ## Capabilities
 
@@ -13,6 +17,7 @@ This repository includes the implementation and the practical guide for configur
 - Automatic HTTPS for one configured hostname; HTTP challenge handling and HTTPS redirects.
 - Embedded theme assets; no nginx, PHP runtime, database, or frontend build required.
 - GET/HEAD only, hidden-path filtering, escaped filenames, and filesystem root confinement.
+- Optional independent SMB executable with signed authentication, explicit folder selection and read-only/read-write modes.
 - Optional USB-aware restart supervision and dedicated IPv4/IPv6 firewall rules on the tested firmware.
 
 The public file service has **no authentication**. HTTPS protects transport; every file placed in the shared directory is available to anyone who can reach the service. Read [security boundaries](SECURITY.md) before deploying.
@@ -28,6 +33,7 @@ Build and test from the repository root:
 ```sh
 make test
 make build-mipsle
+make build-smb-mipsle # optional independent Finder service
 ```
 
 The cross-build writes `dist/routershelf-linux-mipsle`. The deployment guide explains its installed filename and router paths. Configure deployment without editing source or supervisor code:
@@ -49,6 +55,8 @@ Use the [stress-test guide](docs/stress-testing.md) for bounded load phases, rou
 
 ```text
 cmd/routershelf/             HTTP/HTTPS application and behavior tests
+cmd/routershelf-smb/         Independent private SMB executable and config tests
+internal/smbwire/            Adapted Apache-2.0 SMB protocol source and tests
 internal/theme/nais/         Licensed NAIS assets embedded in the executable
 internal/theme/assets.go     Asset embedding boundary
 deploy/padavan/              Environment-driven firmware supervisor
@@ -56,7 +64,8 @@ examples/status-dashboard/  Separate legacy BusyBox/Netcat dashboard
 docs/                       Setup, operations, architecture, and deployment history
 .github/                    CI and issue/pull-request templates
 scripts/nat-plan.sh          Gateway plan derived from private environment
-.env.example                Public configuration template
+.env.example                Public web configuration template
+.smb.example.json           Public SMB template; real credentials stay private
 Makefile                    Local checks and MIPS little-endian build
 project.json                Project identity and compatibility metadata
 ```
@@ -73,4 +82,4 @@ On the original device, HTTPS issuance, trusted downloads, HTTP redirects, read-
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md). Keep deployment configuration, certificate caches, keys, router exports, USB data, logs, and generated binaries out of Git. All tracked deployment examples use placeholder values. This local repository has no configured remote and has not been published.
 
-Project code is [MIT licensed](LICENSE). NAIS retains its [upstream MIT license](internal/theme/nais/LICENSE). Dependency and theme attribution is collected in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Project code is [MIT licensed](LICENSE); the embedded SMB implementation retains its [Apache-2.0 license](internal/smbwire/LICENSE). NAIS retains its [upstream MIT license](internal/theme/nais/LICENSE). Dependency and theme attribution is collected in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

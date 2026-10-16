@@ -1,5 +1,8 @@
 # Maintenance and recovery
 
+This page covers the existing web installation. SMB has separate [status, update, rollback and removal procedures](smb.md#install-status-update-and-remove); stopping or updating one service does not operate the other.
+
+
 ## Routine care
 
 | Frequency / event | Check |

@@ -78,3 +78,9 @@ Validated: example and live config checks, invalid-port rejection, Go environmen
 The application now renders a directory's readable regular `index.html` before listing it, and serves direct HTML requests inline. Recognized CSS/JavaScript/image/font assets have explicit MIME types. Other files retain attachment downloads. No separate root or URL prefix, new env settings, or gateway rules were added.
 
 The binary was deployed with the previous version kept for rollback. Tests covered folder/root index precedence, direct HTML and assets, HEAD, preserved downloads, listing link attributes, and an escaping index symlink. A temporary live page rendered over HTTPS with CSS and JavaScript; its direct HTML link rendered too. HEAD confirmed HTML without attachment disposition, a normal text file still had attachment disposition, and PUT remained 405. Temporary probe files were removed after testing. Static pages intentionally permit browser-side active content; no PHP/CGI/server-side execution was added.
+
+## 10. Optional SMB repository implementation (2026-10-16)
+
+A separate experimental SMB executable, private JSON configuration, source-confined protocol implementation, independent supervisor, templates and guides were added to the repository. Existing web implementation/configuration and installed paths remain unchanged. Local protocol/race/fuzz checks, native macOS SMB operations and actual Finder browsing/copy/rename/metadata sample checks passed; both static MIPS builds compile. See the detailed [SMB validation record](smb-validation.md).
+
+Router access for this change was read-only inspection of kernel, RAM, BusyBox, SMB command/listener availability and exFAT mount behavior. No SMB binary was deployed or executed there. Target kernel/resource/exFAT/Finder/coexistence/boot/rollback validation requires a separately approved session.

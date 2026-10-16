@@ -21,3 +21,9 @@ Never attach private keys, certificate caches, full router exports, USB files, u
 Before the first publication, review staged files and metadata, configure the actual Git remote, and replace publication placeholders where needed. There is no automatic deploy or publish action in this project.
 
 Stress-runner changes should be tested with `make test-stress-tool` against localhost and synthetic telemetry, not by loading the live deployment. Only run a live workload when requested, with the target and bounds clear. See [stress testing](docs/stress-testing.md).
+
+## SMB contributions
+
+Keep `cmd/routershelf-smb` independent of web configuration/certificates/public exposure. Protocol code in `internal/smbwire` is an adapted Apache-2.0 dependency; preserve its license, provenance and adaptation inventory. Run `make test`, `go test -race ./cmd/routershelf-smb ./internal/smbwire`, and `make build-mipsle build-smb-mipsle`. Add meaningful authentication/signing, read-only, confinement, sharing/locking, file mutation, interruption and bounded-resource tests for affected behavior. Never replace disk metadata with successful volatile writes.
+
+Native macOS checks are opt-in: build the desktop SMB executable and run `python3 -B scripts/test_smb_macos.py /absolute/path/to/routershelf-smb`; it mounts only a temporary localhost share with synthetic credentials. Repeat with `--read-only` to check native mutation refusals. Native Finder GUI, actual exFAT, router kernel, resource/coexistence, USB loss, reboot and interrupted native-client tests are separate checks and must be recorded honestly. Read-only router inspection does not authorize executing a new binary or writing test data there. Keep real `smb.json`, hashes and logs private.

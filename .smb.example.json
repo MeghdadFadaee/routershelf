@@ -1,0 +1,24 @@
+{
+  "listen": "127.0.0.1:1445",
+  "storage_mount": "/media/DISK_ID",
+  "root": "/media/DISK_ID/private-storage",
+  "share": "Storage",
+  "user": "storage",
+  "nt_hash": "00000000000000000000000000000000",
+  "read_only": true,
+  "allow": [
+    "127.0.0.1/32"
+  ],
+  "public_roots": [
+    "/media/DISK_ID/public-storage"
+  ],
+  "allow_public_overlap": false,
+  "uid": 65533,
+  "gid": 65533,
+  "case_insensitive": true,
+  "protected_paths": [
+    "/media/DISK_ID/.public-share-service",
+    "/media/DISK_ID/.smb-service"
+  ],
+  "diagnostics": false
+}

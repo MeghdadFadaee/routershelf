@@ -1,7 +1,7 @@
 {
   "name": "routershelf",
   "displayName": "RouterShelf",
-  "description": "Read-only HTTPS directory sharing and static-page serving from USB storage on constrained Linux routers, with NAIS styling and environment-based deployment.",
+  "description": "Public read-only HTTP/HTTPS sharing and independent authenticated private SMB access to selected USB storage on constrained Linux routers.",
   "status": "experimental",
   "license": "MIT",
   "language": "Go",
@@ -17,7 +17,10 @@
     "padavan",
     "mikrotik",
     "nais",
-    "static-site"
+    "static-site",
+    "smb",
+    "finder",
+    "exfat"
   ],
   "testedTarget": {
     "hardware": "Neterbit NW-651D",
@@ -28,5 +31,20 @@
   },
   "repository": null,
   "homepage": null,
-  "configuration": ".env.example"
+  "configuration": ".env.example",
+  "services": {
+    "web": {
+      "entrypoint": "cmd/routershelf",
+      "configuration": ".env.example",
+      "access": "public unauthenticated read-only",
+      "targetStatus": "observed; see docs/deployment-history.md"
+    },
+    "smb": {
+      "entrypoint": "cmd/routershelf-smb",
+      "configuration": ".smb.example.json",
+      "access": "private authenticated; read-only by default",
+      "targetStatus": "experimental; cross-build only pending target execution approval",
+      "documentation": "docs/smb.md"
+    }
+  }
 }

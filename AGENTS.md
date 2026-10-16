@@ -18,6 +18,7 @@ Read the relevant guide before changing a component:
 ## Repository layout
 
 - `cmd/routershelf/`: application, environment/flag parsing, handler and configuration tests.
+- `cmd/routershelf-smb/`, `internal/smbwire/`: independent private SMB executable and adapted Apache-2.0 protocol implementation. Read `docs/smb.md`, `docs/smb-implementation.md`, `docs/smb-validation.md` and `internal/smbwire/UPSTREAM.md` before changing it; preserve license/provenance.
 - `internal/theme/assets.go`: embeds assets under `internal/theme/nais/`.
 - `deploy/padavan/`: environment-driven supervisor and host firewall lifecycle.
 - `scripts/nat-plan.sh`: prints gateway configuration guidance; it does not modify the gateway.
@@ -30,7 +31,7 @@ Keep changes in the appropriate layer. The Go server must not provision DHCP, ch
 
 ## Configuration contract
 
-Network-specific domains, IPs, subnets, interfaces, ports, USB paths and runtime options belong in `RS_*` environment settings, not per-installation source edits. Use public placeholders in `.env.example` and documentation. Defaults should be generic and safe; the standalone Go listener defaults to loopback.
+Per-installation settings never require source edits. The existing web service keeps its `RS_*` environment contract for domains, IPs, subnets, interfaces, ports, USB paths and runtime options. The independent SMB service uses protected JSON selected by `RS_SMB_CONFIG`, with its own tracked template and configuration reference. Use public placeholders in `.env.example` and documentation. Defaults should be generic and safe; the standalone Go listener defaults to loopback.
 
 The supervisor sources a trusted administrator-owned env file, normally `/etc/storage/routershelf.env`; `ROUTERSHELF_ENV_FILE` overrides its location. It exports values and passes application flags. The Go binary reads exported environment values but does **not** load or execute `.env` itself. CLI flags override environment defaults. Keep these representations consistent.
 
@@ -80,3 +81,7 @@ Installed names such as `public-directory`, `public-share-service.sh` and `/tmp/
 Keep diffs focused and update user-facing documentation/metadata when behavior changes. Preserve user edits. Do not assume a remote, version, release or successful publication. Commit or publish only within the requested scope. Follow `.github/PULL_REQUEST_TEMPLATE.md` for descriptions: problem, resulting behavior, actual validation and deployment/rollback impact.
 
 Before publishing or refreshing a public archive, exclude private env, keys, cache, router exports, USB data, logs, screenshots and build output. Include `.env.example`. `.gitignore` does not protect secrets already tracked: inspect the export/staged files. Never claim the public sample supervisor was tested unchanged on every supported device.
+
+## SMB independence
+
+Keep SMB JSON/account/source policy and supervision independent of the web env, domain, certificates, public NAT and compatibility paths. SMB is experimental until actual native Finder and target checks are observed. Run `make build-smb-mipsle` in addition to the web build and SMB race tests for relevant changes. NT hashes are password-equivalent secrets; never publish actual configs. Only localhost native-client tests are implicitly part of local validation; target writes/execution require authorization.
