@@ -1,6 +1,6 @@
 # SMB validation record
 
-Recorded 2026-10-16. SMB remains experimental. No SMB executable, configuration or test data was copied to the router, and no router process, firewall, mount, startup hook or routing configuration was changed.
+Recorded 2026-10-16. SMB remains experimental. Initial implementation validation was local only; a subsequent user-authorized target deployment is recorded below.
 
 ## Actual local checks
 
@@ -40,9 +40,9 @@ SSH inspection confirmed Linux 3.4.113, MIPS, BusyBox 1.24.2 and 126,280 KiB tot
 
 These read-only observations confirm constraints, not SMB execution compatibility. Private addresses, mount identifiers, credentials and raw router dumps are deliberately absent from this record.
 
-## Outstanding checks requiring an approved device session
+## Initial target checklist (see subsequent deployment results)
 
-Do not infer these results from compilation or desktop checks:
+This checklist was written before deployment. Completed smoke checks are recorded below; the remaining failure, load and reboot checks are listed at the end. Do not infer target results from compilation or desktop checks:
 
 - Execute the new MIPS binary on Linux 3.4.113 and verify kernel/syscall compatibility, dropped UID/GID and supplementary groups, random source and startup behavior.
 - Verify exact USB mount identity, configured selected-root and protected-path checks, exFAT naming/case behavior, disk-full and remount-read-only error reporting, non-root write permissions and metadata sidecar persistence.
@@ -53,4 +53,47 @@ Do not infer these results from compilation or desktop checks:
 - Exercise approved USB unavailable/reinsert, supervisor crash/restart, configuration error, binary rollback, independent web/SMB stop/update, host-firewall reload and controlled reboot cases. Do not unplug valuable storage during writes; use backed-up scratch media/data and a deliberate plan.
 - Check that allowed private clients connect while guest/WAN/untrusted sources are denied, with no gateway SMB forwarding and no change to web exposure or unrelated rules.
 
-Use [deployment and rollback](smb.md#install-status-update-and-remove). Upload to new names, retain known-good private backups, validate, stop only the verified SMB supervisor, rename into place, restart and verify. Revert the binary/config/script independently if a check fails. No target load, reboot, kernel compatibility, USB loss recovery or production-readiness claim is made by this change.
+Use [deployment and rollback](smb.md#install-status-update-and-remove). Upload to new names, retain known-good private backups, validate, stop only the verified SMB supervisor, rename into place, restart and verify. Revert the binary/config/script independently if a check fails. Target observations are recorded separately below; smoke checks do not establish unobserved load, reboot, USB-loss or production-readiness guarantees.
+
+## Authorized target deployment and protected root view (2026-10-16)
+
+The user requested read/write access to the USB disk root. Explicit protected
+root sharing was added, with separate opt-ins for disk root and public overlap.
+Mandatory service directories plus configured firmware metadata are hidden and
+inaccessible. Descriptor-pinned parent traversal, no-follow file opens, link
+refusal and protected-ancestor rename/delete checks prevent path-only exclusions
+from being bypassed. Protocol/race tests cover access, Unicode case variants,
+symlink/hardlink aliases, ancestor renames and ordinary cross-directory moves.
+Native macOS localhost testing also passed for the protected root profile.
+
+After authorization, the static MIPS binary was staged to a new USB filename;
+local/remote SHA-256 matched and target configuration validation passed. It now
+runs independently with a separate supervisor/account, UID/GID 65533, no
+supplementary groups and a dedicated IPv4 LAN-only firewall chain. Web PID and
+configuration were preserved; an HTTPS HEAD check succeeded. Startup/firewall
+hooks were extended without executing unrelated startup commands, and the
+private configuration/hooks were saved using firmware persistence. The
+SMB-only stop/restart command verified process identity and cleanup; native
+client access worked after an independent restart.
+
+Observed on the actual device: wrong password refused; native Mac mount;
+protected paths absent/unreadable; scratch mkdir, upload, move/rename,
+checksum-verified download and deletion. The bounded transfer was 256 KiB,
+not a sustained load test. Actual Finder copied a text file to a unique
+scratch folder, Quick Look displayed expected content, and the file checksum
+matched. Scratch files, sidecars and Mac mounts were cleaned up.
+
+**Observed limitation:** the exFAT mount is owned by another UID and refuses
+arbitrary timestamp restoration by the non-root service. Finder copy/open
+completed, but the original modification time was not preserved. No silent
+metadata-success workaround or privilege increase was introduced. After the
+small checks the process used about 6 MiB RSS with a measured high-water mark
+near 7 MiB; after restart and a repeat transfer it used about 4.4 MiB. These
+snapshots are not a memory ceiling or a routing/load benchmark.
+
+Reboot, USB removal/reinsertion, disk-full/remount-read-only failure, large-file
+transfer, native interruption/recovery, complete Mac metadata/application
+compatibility and sustained combined resource/load checks remain unperformed.
+Private device addresses, disk identifiers, account hashes, passwords, hook
+backups and detailed operational instructions remain only in ignored local
+outputs and protected router configuration, not in public source examples.

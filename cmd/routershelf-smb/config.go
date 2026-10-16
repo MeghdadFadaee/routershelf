@@ -28,11 +28,13 @@ type config struct {
 	Allow              []string `json:"allow"`
 	ProtectedPaths     []string `json:"protected_paths"`
 	PublicRoots        []string `json:"public_roots"`
+	AllowStorageRoot   bool     `json:"allow_storage_root"`
 	AllowPublicOverlap bool     `json:"allow_public_overlap"`
 	UID                int      `json:"uid"`
 	GID                int      `json:"gid"`
 	Diagnostics        bool     `json:"diagnostics"`
 	CaseInsensitive    bool     `json:"case_insensitive"`
+	protectedRelative  []string
 	prefixes           []netip.Prefix
 	ntHash             [16]byte
 	ready              func()
@@ -154,7 +156,7 @@ func (c *config) validate() error {
 		return errors.New("selected root is unavailable")
 	}
 	fi, err := os.Stat(c.Root)
-	if err != nil || !fi.IsDir() || c.Root == c.Mount || !within(c.Mount, c.Root) {
+	if err != nil || !fi.IsDir() || (c.Root == c.Mount && !c.AllowStorageRoot) || !within(c.Mount, c.Root) {
 		return errors.New("root must be an existing directory strictly below storage_mount; it is never created automatically")
 	}
 	if within(c.Root, c.path) {
@@ -174,8 +176,15 @@ func (c *config) validate() error {
 		} else if !os.IsNotExist(err) {
 			return errors.New("cannot resolve a protected path")
 		}
-		if within(c.Root, p) || within(p, c.Root) {
-			return errors.New("SMB root overlaps a private service or protected path")
+		if within(p, c.Root) {
+			return errors.New("SMB root is inside a private service or protected path")
+		}
+		if within(c.Root, p) {
+			if c.Root != c.Mount || !c.AllowStorageRoot {
+				return errors.New("SMB root overlaps a private service or protected path")
+			}
+			rel, _ := filepath.Rel(c.Root, p)
+			c.protectedRelative = append(c.protectedRelative, filepath.ToSlash(rel))
 		}
 	}
 	public := append([]string{filepath.Join(c.Mount, "public-storage")}, c.PublicRoots...)

@@ -15,11 +15,19 @@ Use separate sibling directories on USB, for example:
 /etc/storage/routershelf-smb.json    administrator-owned credentials/config
 ```
 
-Replace `DISK_ID` with your actual mount. Create the selected private directory deliberately while the disk is mounted. The service never creates a missing root or serves the whole mount. Never share `/`, the USB mount itself, a service directory, certificate cache, backup directory, or administrator home. Select one root containing the folders you want available; every descendant, including hidden files, is available to the authenticated account. Symlinks cannot escape that root. On filesystems supporting hard links, an administrator must also exclude hard links to sensitive files.
+Replace `DISK_ID` with your actual mount. Create the selected private directory deliberately while the disk is mounted. The service never creates a missing root. It refuses the whole mount by default; an explicitly protected disk-root view is described below. Never share `/`, a service directory, certificate cache, backup directory, or administrator home. Keep the default private sibling unless disk-root access is deliberately required. Select one root containing the folders you want available; every descendant, including hidden files, is available to the authenticated account. Symlinks cannot escape that root. On filesystems supporting hard links, an administrator must also exclude hard links to sensitive files.
 
 `public_roots` must list every web root on this storage, especially a customized `RS_ROOT`. The standard `public-storage` sibling is checked automatically. Default private service directories, this executable and the config are excluded; add customized certificate/cache/binary/backup paths to `protected_paths`. These exclusions cannot be overridden by allowing public overlap. Overlap is refused unless `allow_public_overlap` is explicitly true. Separate processes cannot discover arbitrary web installations: listing the actual public roots is the administrator's responsibility. If you deliberately share a web root, **every SMB upload/rename into it may immediately publish the file without web authentication**. Use a private staging directory and move reviewed files into publication deliberately. The web service retains its own existing path filtering and GET/HEAD policy; SMB credentials do not protect web copies.
 
 exFAT has mount-wide ownership/mode behavior, limited Unix metadata and no POSIX ACL isolation. A separate non-root service UID reduces process privilege but does not isolate secrets on a broadly writable exFAT mount. Put credentials on a permission-enforcing administrator-owned filesystem such as `/etc/storage`; do not rely on `chmod` on exFAT. Restrict other disk accounts and local writers separately. Use only one RouterShelf SMB instance per writable root; independent instances and FTP/SFTP/local programs do not share its locks.
+
+## Optional protected disk-root view
+
+To manage ordinary folders across an entire disk, explicitly set `root` equal to `storage_mount`, `allow_storage_root: true`, and `allow_public_overlap: true`. This also includes public web folders, so writes there may immediately publish content. The default template keeps this mode disabled.
+
+In this mode, private service directories and every configured `protected_paths` subtree are hidden and inaccessible over SMB. The running executable is excluded automatically. Add firmware metadata, customized service/cache paths and backups to that list. Excluded ancestors cannot be moved or deleted to bypass the policy. The protected view refuses symlinks and hard-linked regular files, including aliases to private data; ordinary private-subdirectory shares retain their previous confinement behavior. Parent directories are pinned using `os.Root` and file operations use descriptors rather than a path-only filter.
+
+This is an SMB access boundary, not isolation from other router accounts that can write the exFAT disk. Keep credentials on protected storage outside the disk and restrict other broad disk access separately.
 
 ## Build and configure
 
@@ -64,13 +72,14 @@ The only environment setting is `RS_SMB_CONFIG`, the absolute JSON config path. 
 | --- | --- |
 | `listen` | `127.0.0.1:1445`; a specific private/loopback IPv4 and numeric port; no wildcard, DNS, public IPv4 or IPv6 |
 | `storage_mount` | Required existing absolute USB mount; exact Linux mount presence checked before listening and every two seconds |
-| `root` | Required existing directory strictly under that mount; selected explicitly; never created automatically |
+| `root` | Required existing selected directory under the mount; the mount itself requires explicit protected disk-root mode; never created automatically |
+| `allow_storage_root` | `false`; explicit opt-in to a protected disk-root view; public overlap must also be acknowledged |
 | `share` | `Storage`; direct Finder share name; no separators/spaces or reserved `IPC$` |
 | `user` | Required single account name; no OS account/password database needed |
 | `nt_hash` | Required 32 hex digits; placeholders and empty-password hash refused |
 | `read_only` | `true`; refuses data, directory, metadata, rename and delete mutations |
 | `allow` | Required explicit private/loopback IPv4 CIDRs; applied before authentication; no unrestricted prefixes |
-| `protected_paths` | Additional sensitive paths that must not overlap the share; default service directories and running executable are also excluded |
+| `protected_paths` | Additional sensitive paths; overlap refused normally, or hidden/blocked in explicit disk-root mode; default service directories and running executable always excluded |
 | `public_roots` | Additional actual public roots; standard `storage_mount/public-storage` always checked |
 | `allow_public_overlap` | `false`; deliberate opt-in to overlapping publication |
 | `uid`, `gid` | 65533; positive non-root IDs, applied before file service starts |
@@ -97,7 +106,7 @@ SMB2.0.2/2.1 (SMB3.0 fallback) uses NTLMv2 and mandatory packet signing. **Signi
 
 The service changes no firewall rules. If existing firewall policy blocks LAN SMB, an administrator must allow only the chosen IPv4/interface/client subnet and service port, with an explicit drop for other sources to that port. Use a separately owned SMB chain/hook, preserve SSH and unrelated rules, and test denied guest/WAN sources. Do not flush tables or permit SMB through the existing public web chain. If firmware already listens on 445, leave it alone and select a high port for this initial service. Firewall/persistence changes need separate deployment approval and firmware-specific review.
 
-The exFAT profile advertises case-insensitive, case-preserving names. There are no persistent named streams or ACLs. Per-file read-only/locked mode changes are refused rather than acknowledged on a mount that may ignore them; use the share’s `read_only` policy. Finder can create `._filename` AppleDouble sidecars and `.DS_Store` files on disk; retain these with their files if metadata matters. Some applications may require streams, ACLs, resource forks or Apple extensions that this profile cannot provide. Unsupported requests return errors; no metadata is acknowledged into volatile streams. Finder tags, resource-fork round trips, packages and application-specific saves still require native testing. Do not clean sidecars automatically. Files visible through SMB include dotfiles; the web service still filters them.
+The exFAT profile advertises case-insensitive, case-preserving names. There are no persistent named streams or ACLs. Per-file read-only/locked mode changes are refused rather than acknowledged on a mount that may ignore them; use the share’s `read_only` policy. Finder can create `._filename` AppleDouble sidecars and `.DS_Store` files on disk; retain these with their files if metadata matters. On exFAT mounts owned by another UID, the non-root service may be unable to restore arbitrary original timestamps even when data writes succeed. Permission failures are returned; copied files can retain their new write time. Finder copy and Quick Look passed on the initial target despite this limitation. Some applications may require streams, ACLs, resource forks or Apple extensions that this profile cannot provide. Unsupported requests return errors; no metadata is acknowledged into volatile streams. Finder tags, resource-fork round trips, packages and application-specific saves still require native testing. Do not clean sidecars automatically. Files visible through SMB include dotfiles; the web service still filters them.
 
 Writes use bounded 64 KiB chunks, not whole-file memory. Four connections, 64 total handles, eight compound commands and 1,024 entries per scanned directory bound work. Larger directories return a resource error, rather than an incomplete successful listing; divide large collections into folders. Authentication has a 30-second per-frame deadline and authenticated reads a five-minute idle deadline; reconnect idle clients as needed. The Go memory target is 20 MiB, **not a hard quota**. Protocol state, filesystem caches, firmware and the web process need additional RAM; target resource measurements remain required before enabling both under load.
 

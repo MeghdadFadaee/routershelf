@@ -20,5 +20,6 @@
     "/media/DISK_ID/.public-share-service",
     "/media/DISK_ID/.smb-service"
   ],
-  "diagnostics": false
+  "diagnostics": false,
+  "allow_storage_root": false
 }

@@ -129,3 +129,34 @@ func TestSecretFileAndOverlap(t *testing.T) {
 		}
 	}
 }
+
+func TestExplicitDiskRootView(t *testing.T) {
+	c, p := fixture(t)
+	c.Listen = "127.0.0.1:1445"
+	c.Share = "Storage"
+	c.UID = 65533
+	c.GID = 65533
+	c.Root = c.Mount
+	c.AllowStorageRoot = true
+	saveConfig(t, c, p)
+	if _, _, err := loadConfig([]string{"-config", p}); err == nil {
+		t.Fatal("root view must explicitly allow public overlap too")
+	}
+	c.AllowPublicOverlap = true
+	saveConfig(t, c, p)
+	got, _, err := loadConfig([]string{"-config", p})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.protectedRelative) < 2 {
+		t.Fatal("disk root lacks mandatory service exclusions")
+	}
+	c.Root = filepath.Join(c.Mount, ".smb-service")
+	if err := os.Mkdir(c.Root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	saveConfig(t, c, p)
+	if _, _, err := loadConfig([]string{"-config", p}); err == nil {
+		t.Fatal("protected service directory became a share")
+	}
+}

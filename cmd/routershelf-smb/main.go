@@ -108,7 +108,7 @@ func serve(ctx context.Context, c config) error {
 	if c.Diagnostics {
 		diagnostic = log.Printf
 	}
-	err = smb.Serve(ctx, ln, smb.Config{ExpectedRoot: initial, Ready: func() {
+	err = smb.Serve(ctx, ln, smb.Config{ProtectedPaths: c.protectedRelative, ExpectedRoot: initial, Ready: func() {
 		log.Print("SMB ready; authenticated signing required; read_only=", c.ReadOnly)
 		if c.ready != nil {
 			c.ready()

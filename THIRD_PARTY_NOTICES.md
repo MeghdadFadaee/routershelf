@@ -17,3 +17,5 @@ The CA root bundle is obtained separately during deployment. It is not committed
 ## Embedded SMB server
 
 `internal/smbwire` derives from [Softwarity smbserver v0.1.1](https://github.com/softwarity/smbserver/tree/v0.1.1), commit `88586e668400859c882428b308408c26086bb1d5`, under Apache License 2.0. The complete license is retained at `internal/smbwire/LICENSE`. This is modified source; [UPSTREAM.md](internal/smbwire/UPSTREAM.md) records provenance and RouterShelf adaptations. Include that license and this attribution when distributing SMB source/binaries. The SMB code uses the existing BSD-licensed `golang.org/x/crypto/md4` dependency; module versions/checksums remain in go.mod/go.sum. Apache-licensed embedded code retains its own license while RouterShelf project code remains MIT.
+
+The protected SMB disk-root view also uses `golang.org/x/sys/unix` (Go project BSD-style license), pinned in `go.mod`/`go.sum`. It supplies descriptor-relative filesystem operations and introduces no router runtime or shared-library dependency.

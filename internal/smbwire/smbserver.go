@@ -28,6 +28,8 @@ type Config struct {
 	// Root is the directory to serve. Nothing outside of it is reachable,
 	// including through symbolic links.
 	Root string
+	// ProtectedPaths excludes relative subtrees in an explicit disk-root view.
+	ProtectedPaths []string
 	// ExpectedRoot prevents serving a replacement between validation and open.
 	ExpectedRoot os.FileInfo
 	// Ready runs after confinement and cancellation are initialized.
@@ -71,7 +73,7 @@ const (
 
 type server struct {
 	cfg      Config
-	root     *os.Root
+	root     *guardedRoot
 	rootPath string
 	guid     [16]byte
 	start    time.Time
@@ -172,9 +174,14 @@ func newServer(cfg Config) (*server, error) {
 			return nil, errors.New("smbserver: storage identity changed before startup")
 		}
 	}
+	guarded, err := newGuardedRoot(root, cfg.ProtectedPaths)
+	if err != nil {
+		root.Close()
+		return nil, err
+	}
 	s := &server{
 		cfg:      cfg,
-		root:     root,
+		root:     guarded,
 		rootPath: abs,
 		start:    time.Now(),
 		conns:    make(map[*conn]struct{}),

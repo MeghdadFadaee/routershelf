@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Opt-in native macOS SMB smoke test, localhost + temporary data only.
 
-Usage: python3 scripts/test_smb_macos.py /absolute/path/to/routershelf-smb [--read-only]
+Usage: python3 scripts/test_smb_macos.py /absolute/path/to/routershelf-smb [--read-only] [--disk-root]
 Uses a disposable test account/password, never a router or private configuration.
 Requires macOS mount_smbfs and permission to mount a local network filesystem.
 """
@@ -18,11 +18,12 @@ import time
 
 
 def main():
-  if platform.system() != "Darwin" or len(sys.argv) not in (2, 3):
+  if platform.system() != "Darwin" or len(sys.argv) < 2:
     raise SystemExit("Use on macOS with one absolute local executable path")
-  readonly = len(sys.argv) == 3 and sys.argv[2] == "--read-only"
-  if len(sys.argv) == 3 and not readonly:
-    raise SystemExit("Only --read-only is supported")
+  options=set(sys.argv[2:])
+  if options-{"--read-only","--disk-root"}: raise SystemExit("Only --read-only and --disk-root are supported")
+  readonly="--read-only" in options
+  diskroot="--disk-root" in options
   binary = Path(sys.argv[1]).resolve(strict=True)
   password = "RouterShelf-local-test-only-123"  # public synthetic credential
   digest = subprocess.check_output(
@@ -42,6 +43,10 @@ def main():
             root=str(root), user="storage", nt_hash=digest,
             read_only=readonly, allow=["127.0.0.1/32"],
             uid=os.getuid(), gid=os.getgid())
+    if diskroot:
+      settings.update(storage_mount=str(root),allow_storage_root=True,allow_public_overlap=True)
+      (root/".smb-service").mkdir()
+      (root/".smb-service"/"private-sentinel").write_text("must stay private")
     cfg.write_text(json.dumps(settings))
     cfg.chmod(0o600)
     subprocess.run([str(binary), "-config", str(cfg), "-check-config"],
@@ -90,6 +95,11 @@ def main():
 
 
 def operations(mount):
+  if ".smb-service" in {p.name for p in mount.iterdir()}: raise RuntimeError("private service directory exposed")
+  try:
+    (mount/".smb-service"/"private-sentinel").read_bytes()
+  except OSError: pass
+  else: raise RuntimeError("private service data exposed")
   (mount / "folder").mkdir()
   block = b"RouterShelf-integrity-probe-" * 2048
   expected = hashlib.sha256()

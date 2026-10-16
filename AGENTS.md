@@ -85,3 +85,5 @@ Before publishing or refreshing a public archive, exclude private env, keys, cac
 ## SMB independence
 
 Keep SMB JSON/account/source policy and supervision independent of the web env, domain, certificates, public NAT and compatibility paths. SMB is experimental until actual native Finder and target checks are observed. Run `make build-smb-mipsle` in addition to the web build and SMB race tests for relevant changes. NT hashes are password-equivalent secrets; never publish actual configs. Only localhost native-client tests are implicitly part of local validation; target writes/execution require authorization.
+
+Explicit SMB disk-root sharing requires `allow_storage_root`, deliberate public-overlap acknowledgment, and descriptor-safe protected-path exclusions. Preserve alias/ancestor-rename protection; a lexical path filter alone is insufficient. Record observed exFAT timestamp limitations without raising process privileges or acknowledging metadata changes that did not occur.
